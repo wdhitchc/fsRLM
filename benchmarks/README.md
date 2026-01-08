@@ -1,6 +1,6 @@
-# ccRLM Benchmarks
+# fsRLM Benchmarks
 
-Benchmarks for evaluating ccRLM on long-context reasoning tasks.
+Benchmarks for evaluating fsRLM on long-context reasoning tasks.
 
 ## OOLONG Benchmark
 
@@ -72,7 +72,7 @@ The RLM paper reports these results on OOLONG:
 | GPT-5 | 44.0% | 47.3% | **56.5%** |
 | GPT-5-mini | 38.2% | 41.1% | **49.8%** |
 
-ccRLM aims to achieve similar gains using a filesystem-based approach.
+fsRLM aims to achieve similar gains using a filesystem-based approach.
 
 ## Adding New Benchmarks
 

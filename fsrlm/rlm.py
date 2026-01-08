@@ -1,11 +1,11 @@
 """
 RLM - Recursive Language Model abstraction.
 
-This is the main interface for ccRLM. Use it like you would use an LLM,
+This is the main interface for fsRLM. Use it like you would use an LLM,
 but internally it spins up a full agent loop with recursive scripting.
 
 Usage:
-    from ccrlm import RLM
+    from fsrlm import RLM
 
     # Simple string prompt
     rlm = RLM()
@@ -276,7 +276,7 @@ def invoke(
     One-shot RLM invocation.
 
     Examples:
-        from ccrlm import invoke
+        from fsrlm import invoke
 
         # Simple prompt
         result = invoke("Complex analysis task...")

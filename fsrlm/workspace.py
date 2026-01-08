@@ -1,5 +1,5 @@
 """
-Workspace management for ccRLM.
+Workspace management for fsRLM.
 
 Handles creation, scaffolding, and cleanup of the structured workspace
 that serves as the "environment" for the RLM agent.
@@ -82,7 +82,7 @@ class Workspace:
         is_temp = root is None
 
         if is_temp:
-            root = Path(tempfile.mkdtemp(prefix="ccrlm_"))
+            root = Path(tempfile.mkdtemp(prefix="fsrlm_"))
         else:
             root = Path(root)
             root.mkdir(parents=True, exist_ok=True)

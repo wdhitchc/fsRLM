@@ -1,15 +1,15 @@
-# ccRLM - Filesystem-Based Recursive Language Model
+# fsRLM - Filesystem-Based Recursive Language Model
 
 A filesystem-based implementation of [Recursive Language Models (RLMs)](https://arxiv.org/abs/2512.24601) using the Claude Agent SDK.
 
 > **RLMs** enable language models to process arbitrarily long inputs by treating prompts as an external environment, allowing the model to programmatically examine, decompose, and recursively call itself over snippets of the input.
 
-## What is ccRLM?
+## What is fsRLM?
 
-ccRLM implements the RLM paradigm with a **filesystem-as-working-memory** approach:
+fsRLM implements the RLM paradigm with a **filesystem-as-working-memory** approach:
 
 - **Traditional RLM**: Python REPL with `extra_data` variable + `llm_batch()` function
-- **ccRLM**: Structured workspace filesystem + Claude Agent SDK + Python scripts
+- **fsRLM**: Structured workspace filesystem + Claude Agent SDK + Python scripts
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -43,7 +43,7 @@ ccRLM implements the RLM paradigm with a **filesystem-as-working-memory** approa
 | Approach | Pros | Cons |
 |----------|------|------|
 | **REPL-based** (original RLM) | Direct variable access, fast | State lost on crash, hard to debug |
-| **Filesystem-based** (ccRLM) | Persistent, debuggable, observable | Slightly more overhead |
+| **Filesystem-based** (fsRLM) | Persistent, debuggable, observable | Slightly more overhead |
 
 The filesystem approach gives you:
 - **Observability**: Watch the agent's reasoning unfold in real files
@@ -55,8 +55,8 @@ The filesystem approach gives you:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ccrlm
-cd ccrlm
+git clone https://github.com/wdhitchc/fsRLM
+cd fsRLM
 
 # Install with uv (recommended)
 uv venv && uv pip install -e ".[dev]"
@@ -71,7 +71,7 @@ npm install -g @anthropic-ai/claude-code
 ## Quick Start
 
 ```python
-from ccrlm import RLM
+from fsrlm import RLM
 
 rlm = RLM()
 
@@ -96,7 +96,7 @@ result = rlm.invoke(
 ## Configuration
 
 ```python
-from ccrlm import RLM, RLMConfig
+from fsrlm import RLM, RLMConfig
 
 config = RLMConfig(
     # Recursive subcalls (scripts calling Claude)
@@ -120,7 +120,7 @@ rlm = RLM(config=config)
 
 ## AWS Bedrock Support
 
-ccRLM supports AWS Bedrock as an alternative to the direct Anthropic API:
+fsRLM supports AWS Bedrock as an alternative to the direct Anthropic API:
 
 ```bash
 # Install with Bedrock support
@@ -128,7 +128,7 @@ uv pip install -e ".[bedrock]"
 ```
 
 ```python
-from ccrlm import RLM, RLMConfig
+from fsrlm import RLM, RLMConfig
 
 config = RLMConfig(
     # Enable Bedrock
@@ -170,7 +170,7 @@ The agent receives a preview and instructions to:
 
 ## Benchmarks
 
-ccRLM includes integration with the [OOLONG benchmark](https://huggingface.co/datasets/oolongbench/oolong-synth) used in the original RLM paper.
+fsRLM includes integration with the [OOLONG benchmark](https://huggingface.co/datasets/oolongbench/oolong-synth) used in the original RLM paper.
 
 ```bash
 # Run OOLONG benchmark
@@ -184,7 +184,7 @@ See [benchmarks/README.md](benchmarks/README.md) for details.
 
 ## Comparison with Original RLM
 
-| Feature | Original RLM | ccRLM |
+| Feature | Original RLM | fsRLM |
 |---------|--------------|-------|
 | Environment | Python REPL | Filesystem + Agent SDK |
 | State storage | `extra_data` variable | `input/prompt.md` file |
@@ -209,8 +209,8 @@ See [benchmarks/README.md](benchmarks/README.md) for details.
 ## Architecture
 
 ```
-ccrlm/
-├── ccrlm/
+fsrlm/
+├── fsrlm/
 │   ├── __init__.py      # Public API
 │   ├── rlm.py           # Main RLM class
 │   ├── runner.py        # Agent SDK wrapper

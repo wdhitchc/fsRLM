@@ -1,5 +1,5 @@
 """
-Chunking utilities for ccRLM.
+Chunking utilities for fsRLM.
 
 This module provides helpers for splitting large text into chunks
 suitable for recursive LLM processing. It handles:

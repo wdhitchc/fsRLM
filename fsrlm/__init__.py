@@ -1,5 +1,5 @@
 """
-ccRLM - Claude Code Recursive Language Model
+fsRLM - Filesystem-based Recursive Language Model
 
 An RLM-style abstraction that uses Claude Agent SDK as a root agent,
 with recursive Claude API calls happening inside Python scripts.

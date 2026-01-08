@@ -1,5 +1,5 @@
 """
-Agent SDK runner for ccRLM.
+Agent SDK runner for fsRLM.
 
 This module wraps the Claude Agent SDK to run the root agent
 in the workspace with proper configuration.

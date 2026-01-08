@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic usage example for ccRLM.
+Basic usage example for fsRLM.
 
 This demonstrates how to use the RLM abstraction to process
 a complex prompt using the recursive agent approach.
@@ -17,7 +17,7 @@ Usage:
 import os
 from pathlib import Path
 
-from ccrlm import RLM, RLMConfig
+from fsrlm import RLM, RLMConfig
 
 
 def simple_example():
@@ -192,7 +192,7 @@ def one_shot_example():
     """Using the convenience function."""
     print("\n=== One-Shot Example ===\n")
 
-    from ccrlm.rlm import invoke
+    from fsrlm.rlm import invoke
 
     result = invoke(
         prompt="Explain recursion in programming with an example.",

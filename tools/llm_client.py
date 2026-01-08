@@ -1,5 +1,5 @@
 """
-LLM Client wrapper for ccRLM recursive calls.
+LLM Client wrapper for fsRLM recursive calls.
 
 This module provides a cached, logged wrapper around the Anthropic API
 for use in RLM scripts. It handles:

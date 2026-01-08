@@ -3,7 +3,7 @@
 Simple test script to verify Bedrock integration.
 """
 
-from ccrlm import RLM, RLMConfig
+from fsrlm import RLM, RLMConfig
 
 # Configure for Bedrock
 config = RLMConfig(
@@ -14,7 +14,7 @@ config = RLMConfig(
     preserve_workspace=True,  # Keep workspace for inspection
 )
 
-print("Testing ccRLM with AWS Bedrock...")
+print("Testing fsRLM with AWS Bedrock...")
 print(f"  Root model: {config.bedrock_model}")
 print(f"  Submodel: {config.bedrock_submodel}")
 print()

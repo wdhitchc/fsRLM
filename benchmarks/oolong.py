@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OOLONG Benchmark Runner for ccRLM.
+OOLONG Benchmark Runner for fsRLM.
 
 OOLONG (Out-of-Length Ordered Natural Generation) is a benchmark for
 evaluating long-context reasoning and aggregation capabilities.
@@ -31,7 +31,7 @@ except ImportError:
         "Benchmark dependencies required: uv pip install -e '.[benchmarks]'"
     )
 
-from ccrlm import RLM, RLMConfig, RLMResult
+from fsrlm import RLM, RLMConfig, RLMResult
 
 
 @dataclass
@@ -362,7 +362,7 @@ def print_summary(run: BenchmarkRun) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run OOLONG benchmark on ccRLM")
+    parser = argparse.ArgumentParser(description="Run OOLONG benchmark on fsRLM")
     parser.add_argument(
         "--split",
         choices=["synth", "real"],

@@ -1,11 +1,11 @@
-# Contributing to ccRLM
+# Contributing to fsRLM
 
-Thanks for your interest in contributing to ccRLM!
+Thanks for your interest in contributing to fsRLM!
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/ccrlm`
+2. Clone your fork: `git clone https://github.com/yourusername/fsrlm`
 3. Install dependencies: `uv venv && uv pip install -e ".[dev]"`
 4. Create a branch: `git checkout -b feature/your-feature`
 
@@ -58,7 +58,7 @@ uv run ruff format .
 
 Please include:
 - Python version
-- ccRLM version
+- fsRLM version
 - Minimal reproduction steps
 - Expected vs actual behavior
 
