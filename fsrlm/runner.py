@@ -296,6 +296,7 @@ Begin by scanning the input to understand its structure."""
             system_prompt=self._build_system_prompt_suffix(),
             max_turns=self.config.max_turns,
             permission_mode=self.config.permission_mode,
+            setting_sources=self.config.setting_sources,  # Load .claude/CLAUDE.md and skills
         )
 
         # Run the agent
