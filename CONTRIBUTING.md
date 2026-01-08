@@ -2,6 +2,22 @@
 
 Thanks for your interest in contributing to fsRLM!
 
+## Project Status: Early Development
+
+**This project is very new and rapidly evolving.** Expect:
+
+- Significant architectural changes
+- Breaking API updates
+- Incomplete features
+- Rough edges and bugs
+
+I'm actively iterating on the core implementation. Feel free to:
+- **Open issues** - Bug reports, questions, and feature ideas are all welcome
+- **Submit PRs** - Contributions appreciated, but be aware things may shift underneath you
+- **Experiment** - Try it out and share what works or doesn't
+
+This is a work-in-progress, not a stable release. The goal is to get the core concepts right first, then stabilize.
+
 ## Getting Started
 
 1. Fork the repository

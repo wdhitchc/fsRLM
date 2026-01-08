@@ -1,5 +1,7 @@
 # fsRLM - Filesystem-Based Recursive Language Model
 
+> **⚠️ Early Development**: This project is in active early development. Expect significant changes, breaking updates, and rough edges. PRs and issues welcome, but this is WIP - not a release.
+
 A filesystem-based implementation of [Recursive Language Models (RLMs)](https://arxiv.org/abs/2512.24601) using the Claude Agent SDK.
 
 > **RLMs** enable language models to process arbitrarily long inputs by treating prompts as an external environment, allowing the model to programmatically examine, decompose, and recursively call itself over snippets of the input.
