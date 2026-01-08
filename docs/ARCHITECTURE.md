@@ -63,7 +63,7 @@ fsRLM implements the same concept, but uses the **filesystem as working memory**
 │  Workspace Filesystem (working memory)                      │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │ input/prompt.md        ←── context variable equivalent   ││
-│  │ state/evidence.jsonl   ←── intermediate results         ││
+│  │ state/artifacts.jsonl   ←── intermediate results         ││
 │  │ cache/llm/             ←── cached recursive calls       ││
 │  │ scratch/scripts/       ←── model-generated code         ││
 │  │ output/answer.md       ←── final answer destination     ││
@@ -80,7 +80,7 @@ fsRLM implements the same concept, but uses the **filesystem as working memory**
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  RLMResult(answer=..., metrics=..., evidence=...)           │
+│  RLMResult(answer=..., metrics=..., artifacts=...)          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -106,7 +106,7 @@ In the original RLM, the model must write all processing code from scratch each 
 **`tools/llm_client.py`** - Claude API wrapper with:
 - Response caching (don't re-call for same prompt)
 - Automatic error logging to `state/errors.jsonl`
-- Evidence logging to `state/evidence.jsonl`
+- Artifact logging to `state/artifacts.jsonl`
 - Metrics tracking (token counts, call counts)
 - Budget enforcement from `job.json` config
 
@@ -135,7 +135,7 @@ The `.claude/skills/rlm-scripting/SKILL.md` teaches the agent **how to write scr
 
 - **Naming conventions**: `001_scan.py`, `002_extract.py`, etc.
 - **Output discipline**: Write to files, print only summaries
-- **Where to store what**: evidence → `state/evidence.jsonl`, cache → `cache/`, etc.
+- **Where to store what**: artifacts → `state/artifacts.jsonl`, cache → `cache/`, etc.
 - **How to use the tools**: Example code for `LLMClient`, `Chunker`
 - **Typical workflow**: scan → chunk → extract → synthesize → verify
 - **Budget awareness**: How to check limits in `job.json`
@@ -162,7 +162,7 @@ In fsRLM, **files** persist across scripts - but only if scripts know where to f
 
 | What | Where | Format | Why |
 |------|-------|--------|-----|
-| Extracted facts | `state/evidence.jsonl` | Line-delimited JSON | Append-friendly, queryable |
+| Extracted facts | `state/artifacts.jsonl` | Line-delimited JSON | Append-friendly, queryable |
 | Working notes | `state/notes.md` | Markdown | Human-readable reasoning |
 | Chunk indexes | `cache/indexes/*.json` | JSON | Structured, reusable |
 | API responses | `cache/llm/<hash>.json` | JSON | Deterministic cache keys |
@@ -172,46 +172,46 @@ In fsRLM, **files** persist across scripts - but only if scripts know where to f
 **This enables script chaining:**
 
 ```python
-# 001_extract.py - stores to evidence.jsonl
+# 001_extract.py - stores to artifacts.jsonl
 from tools.llm_client import LLMClient
 client = LLMClient()
 for chunk in chunks:
     client.call(
         prompt=f"Extract facts: {chunk}",
-        log_to_evidence=True,  # Writes to state/evidence.jsonl
-        evidence_tag="extracted_fact",
+        log_to_artifacts=True,  # Writes to state/artifacts.jsonl
+        artifact_tag="extracted_fact",
     )
 ```
 
 ```python
-# 002_synthesize.py - reads from evidence.jsonl
+# 002_synthesize.py - reads from artifacts.jsonl
 import json
 
 # Later script KNOWS where to find the data
-evidence = []
-with open("state/evidence.jsonl") as f:
+artifacts = []
+with open("state/artifacts.jsonl") as f:
     for line in f:
         entry = json.loads(line)
         if entry["tag"] == "extracted_fact":
-            evidence.append(entry["content"])
+            artifacts.append(entry["content"])
 
 # Now synthesize
-final_answer = synthesize(evidence)
+final_answer = synthesize(artifacts)
 ```
 
 **The skill ensures:**
-- Script 001 stores facts in `state/evidence.jsonl` with tag `"extracted_fact"`
-- Script 002 knows to look in `state/evidence.jsonl` for tagged entries
+- Script 001 stores facts in `state/artifacts.jsonl` with tag `"extracted_fact"`
+- Script 002 knows to look in `state/artifacts.jsonl` for tagged entries
 - Both scripts follow the same conventions because the skill taught them
 
 **This is "variable persistence" via filesystem:**
 
 | REPL | fsRLM |
 |------|-------|
-| `summaries = [...]` | `client.call(..., log_to_evidence=True, evidence_tag="summary")` |
-| `print(summaries[0])` | `grep "summary" state/evidence.jsonl \| head -1` |
-| `len(summaries)` | `grep -c "summary" state/evidence.jsonl` |
-| `final = f(summaries)` | Read `evidence.jsonl`, filter by tag, process |
+| `summaries = [...]` | `client.call(..., log_to_artifacts=True, artifact_tag="summary")` |
+| `print(summaries[0])` | `grep "summary" state/artifacts.jsonl \| head -1` |
+| `len(summaries)` | `grep -c "summary" state/artifacts.jsonl` |
+| `final = f(summaries)` | Read `artifacts.jsonl`, filter by tag, process |
 
 The skill **codifies this knowledge** so the agent consistently:
 1. Stores important outputs to known locations
@@ -239,10 +239,10 @@ final = synthesize(summaries)
 # Intermediate results written to files
 for i, chunk in enumerate(chunks):
     result = client.call(f"Summarize: {chunk}")
-    # Result automatically logged to state/evidence.jsonl
+    # Result automatically logged to state/artifacts.jsonl
     # AND cached to cache/llm/<hash>.json
 
-# If process crashes, evidence.jsonl persists
+# If process crashes, artifacts.jsonl persists
 # Re-running uses cache - no repeated API calls
 ```
 
@@ -254,12 +254,12 @@ for i, chunk in enumerate(chunks):
 | Debugging | Print statements | Inspect actual files |
 | Caching | Must implement | Built into llm_client |
 | Observability | Limited | Watch files in real-time |
-| Auditability | Trajectory logs | Full evidence trail |
+| Auditability | Trajectory logs | Full artifact trail |
 | Pause/resume | Complex | Natural (stop/start) |
 
-**Evidence as structured data:**
+**Artifacts as structured data:**
 
-Instead of summaries sitting in a Python list, they're appended to `state/evidence.jsonl`:
+Instead of summaries sitting in a Python list, they're appended to `state/artifacts.jsonl`:
 
 ```json
 {"timestamp": "2024-01-15T10:30:00", "tag": "summary_chunk_0", "content": "...", "metadata": {...}}
@@ -270,7 +270,7 @@ Instead of summaries sitting in a Python list, they're appended to `state/eviden
 This creates an **audit trail** of all extracted information, tagged and timestamped, that:
 - Survives crashes
 - Can be inspected mid-run
-- Enables the synthesis step to read all evidence
+- Enables the synthesis step to read all artifacts
 - Provides transparency into what the agent learned
 
 ### 5. Standard Unix Tools for Exploration
@@ -365,7 +365,7 @@ The `Workspace` class creates a structured directory:
 ├── state/
 │   ├── job.json            # Configuration + budget limits
 │   ├── notes.md            # Agent's working notes
-│   ├── evidence.jsonl      # Extracted facts (line-delimited JSON)
+│   ├── artifacts.jsonl     # Extracted facts (line-delimited JSON)
 │   ├── errors.jsonl        # Error log
 │   └── metrics.json        # Token/call counts
 ├── cache/
@@ -453,7 +453,7 @@ To process this large input:
 1. Read state/job.json for configuration and budget limits
 2. Use tools/chunking.py to split the content
 3. Use tools/llm_client.py for sub-queries on chunks
-4. Store intermediate results in state/evidence.jsonl
+4. Store intermediate results in state/artifacts.jsonl
 5. Write your final answer to output/answer.md
 
 Begin by scanning the input to understand its structure.
@@ -473,7 +473,7 @@ You have access to a structured workspace with tools for recursive processing:
 
 Workspace layout:
 - input/: User's request (prompt.md) and attachments
-- state/: Working state (job.json config, notes.md, evidence.jsonl)
+- state/: Working state (job.json config, notes.md, artifacts.jsonl)
 - cache/: Response cache and indexes
 - scratch/scripts/: Your generated scripts
 - output/: Final deliverables (answer.md)
@@ -529,8 +529,8 @@ chunks = chunk_prompt(max_tokens=2000)
 for chunk in chunks:
     result = client.call(
         prompt=f"Extract key facts:\n\n{chunk.content}",
-        log_to_evidence=True,
-        evidence_tag=f"facts_chunk_{chunk.index}",
+        log_to_artifacts=True,
+        artifact_tag=f"facts_chunk_{chunk.index}",
     )
     if result:
         print(f"Processed chunk {chunk.index}")
@@ -539,19 +539,19 @@ for chunk in chunks:
 ```python
 # Agent creates: scratch/scripts/003_synthesize.py
 #!/usr/bin/env python3
-"""Synthesize evidence into final answer."""
+"""Synthesize artifacts into final answer."""
 import json
 
-# Read all evidence
-evidence = []
-with open("state/evidence.jsonl") as f:
+# Read all artifacts
+artifacts = []
+with open("state/artifacts.jsonl") as f:
     for line in f:
-        evidence.append(json.loads(line))
+        artifacts.append(json.loads(line))
 
 # Write final answer
 with open("output/answer.md", "w") as f:
     f.write("# Analysis Results\n\n")
-    for item in evidence:
+    for item in artifacts:
         f.write(f"- {item['content']}\n")
 
 print("Answer written to output/answer.md")
@@ -566,7 +566,7 @@ When scripts call `client.call()`, the LLMClient:
 3. **Caches response** for future runs
 4. **Updates metrics** (`state/metrics.json`)
 5. **Logs errors** (`state/errors.jsonl`)
-6. **Optionally logs evidence** (`state/evidence.jsonl`)
+6. **Optionally logs artifacts** (`state/artifacts.jsonl`)
 
 ```python
 # What happens inside client.call():
@@ -582,8 +582,8 @@ response = anthropic.messages.create(
 
 save_to_cache(cache_key, response)
 update_metrics(tokens_used)
-if log_to_evidence:
-    append_to_evidence(response, tag)
+if log_to_artifacts:
+    append_to_artifacts(response, tag)
 
 return response
 ```
@@ -602,14 +602,14 @@ metrics = json.load(open(workspace / "state" / "metrics.json"))
 # Read errors
 errors = [json.loads(line) for line in open(workspace / "state" / "errors.jsonl")]
 
-# Read evidence
-evidence = [json.loads(line) for line in open(workspace / "state" / "evidence.jsonl")]
+# Read artifacts
+artifacts = [json.loads(line) for line in open(workspace / "state" / "artifacts.jsonl")]
 
 return RLMResult(
     answer=answer,
     metrics=metrics,
     errors=errors,
-    evidence=evidence,
+    artifacts=artifacts,
     success=answer is not None,
 )
 ```
@@ -678,11 +678,11 @@ return RLMResult(
 │       └── Script calls: tools/llm_client.py                        │
 │           └── LLM calls Haiku for each chunk                       │
 │           └── Results cached to cache/llm/                         │
-│           └── Evidence logged to state/evidence.jsonl              │
+│           └── Artifacts logged to state/artifacts.jsonl            │
 │                                                                     │
 │   Agent writes: scratch/scripts/003_synthesize.py                  │
 │   Agent runs:   python scratch/scripts/003_synthesize.py           │
-│       └── Reads state/evidence.jsonl                               │
+│       └── Reads state/artifacts.jsonl                              │
 │       └── Writes output/answer.md                                  │
 │                                                                     │
 └────────────────────────────────────────────────────────────────────┘
@@ -693,9 +693,9 @@ return RLMResult(
 │   - Read output/answer.md → answer                                 │
 │   - Read state/metrics.json → metrics                              │
 │   - Read state/errors.jsonl → errors                               │
-│   - Read state/evidence.jsonl → evidence                           │
+│   - Read state/artifacts.jsonl → artifacts                         │
 │                                                                     │
-│   Return RLMResult(answer, metrics, errors, evidence)              │
+│   Return RLMResult(answer, metrics, errors, artifacts)             │
 └────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼

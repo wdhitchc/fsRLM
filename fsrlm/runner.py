@@ -119,7 +119,7 @@ You have access to a structured workspace with tools for recursive processing:
 
 Workspace layout:
 - input/: User's request (prompt.md) and attachments
-- state/: Working state (job.json config, notes.md, evidence.jsonl)
+- state/: Working state (job.json config, notes.md, artifacts.jsonl)
 - cache/: Response cache and indexes
 - scratch/scripts/: Your generated scripts
 - output/: Final deliverables (answer.md)
@@ -248,7 +248,7 @@ To process this:
 1. Read state/job.json for configuration and budget limits
 2. Use tools/chunking.py to split the content
 3. Use tools/llm_client.py for sub-queries on chunks
-4. Store intermediate results in state/evidence.jsonl
+4. Store intermediate results in state/artifacts.jsonl
 5. Write your final answer to output/answer.md
 
 Begin by understanding what the user is asking for."""
@@ -268,7 +268,7 @@ To process this large input:
 1. Read state/job.json for configuration and budget limits
 2. Use tools/chunking.py to split the content
 3. Use tools/llm_client.py for sub-queries on chunks
-4. Store intermediate results in state/evidence.jsonl
+4. Store intermediate results in state/artifacts.jsonl
 5. Write your final answer to output/answer.md
 
 Begin by scanning the input to understand its structure."""

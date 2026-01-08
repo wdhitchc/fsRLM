@@ -14,11 +14,11 @@ from tools.llm_client import call_claude
 # Simple call
 result = call_claude("Summarize this text: ...")
 
-# With evidence logging
+# With artifact logging
 result = call_claude(
     "Extract key facts from: ...",
-    log_to_evidence=True,
-    evidence_tag="facts_extraction"
+    log_to_artifacts=True,
+    artifact_tag="facts_extraction"
 )
 ```
 
@@ -36,8 +36,8 @@ result = client.call(
     model="claude-haiku-4-20250414",  # default from config
     max_tokens=1000,
     temperature=0.0,
-    log_to_evidence=True,
-    evidence_tag="my_tag",
+    log_to_artifacts=True,
+    artifact_tag="my_tag",
     use_cache=True,
 )
 
@@ -50,7 +50,7 @@ if result:
 results = client.call_batch(
     prompts=["Prompt 1", "Prompt 2", "Prompt 3"],
     system="Summarize briefly",
-    log_to_evidence=True,
+    log_to_artifacts=True,
 )
 ```
 
@@ -58,7 +58,7 @@ results = client.call_batch(
 
 - **Caching**: Responses cached by content hash in `cache/llm/`
 - **Error logging**: Failures logged to `state/errors.jsonl`
-- **Evidence logging**: Optional logging to `state/evidence.jsonl`
+- **Artifact logging**: Optional logging to `state/artifacts.jsonl`
 - **Metrics tracking**: Usage tracked in `state/metrics.json`
 - **Config-driven**: Reads defaults from `state/job.json`
 
@@ -133,7 +133,7 @@ When chunking a file, a manifest is saved to `cache/indexes/<filename>_chunks.js
 
 ## Best Practices
 
-1. **Always log to evidence** when extracting important information
+1. **Always log to artifacts** when extracting important information
 2. **Use caching** to avoid redundant API calls
 3. **Check errors** periodically via `state/errors.jsonl`
 4. **Print minimal stdout** - write large outputs to files instead

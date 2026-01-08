@@ -15,7 +15,7 @@ input/
 state/
   job.json           # Configuration and paths
   notes.md           # Your working notes
-  evidence.jsonl     # Extracted facts and summaries
+  artifacts.jsonl    # Extracted facts and summaries
   errors.jsonl       # Error log (scripts log here)
   metrics.json       # Token/call counts
 cache/

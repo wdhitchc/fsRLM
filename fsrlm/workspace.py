@@ -36,7 +36,7 @@ class Workspace:
 
     The workspace layout:
         input/           - User prompt and attachments
-        state/           - Job manifest, notes, evidence
+        state/           - Job manifest, notes, artifacts
         cache/           - LLM response cache, indexes
         scratch/         - Generated scripts, temp files
         output/          - Final answer artifacts
@@ -114,7 +114,7 @@ class Workspace:
             "attachments_dir": "input/attachments",
             "answer_path": "output/answer.md",
             "answer_json_path": "output/answer.json",
-            "evidence_path": "state/evidence.jsonl",
+            "artifacts_path": "state/artifacts.jsonl",
             "notes_path": "state/notes.md",
             "errors_path": "state/errors.jsonl",
             "metrics_path": "state/metrics.json",
@@ -279,16 +279,16 @@ class Workspace:
                         errors.append(json.loads(line))
         return errors
 
-    def get_evidence(self) -> list[dict]:
-        """Read collected evidence."""
-        evidence_path = self.root / "state" / "evidence.jsonl"
-        evidence = []
-        if evidence_path.exists():
-            with open(evidence_path) as f:
+    def get_artifacts(self) -> list[dict]:
+        """Read collected artifacts."""
+        artifacts_path = self.root / "state" / "artifacts.jsonl"
+        artifacts = []
+        if artifacts_path.exists():
+            with open(artifacts_path) as f:
                 for line in f:
                     if line.strip():
-                        evidence.append(json.loads(line))
-        return evidence
+                        artifacts.append(json.loads(line))
+        return artifacts
 
     def clear(self) -> None:
         """Clear the workspace for reuse, preserving structure."""

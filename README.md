@@ -23,7 +23,7 @@ fsRLM implements the RLM paradigm with a **filesystem-as-working-memory** approa
 │  Workspace Filesystem (working memory)                      │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │ input/prompt.md        # Your input (can be huge)       ││
-│  │ state/evidence.jsonl   # Extracted facts from chunks    ││
+│  │ state/artifacts.jsonl  # Extracted facts from chunks    ││
 │  │ cache/llm/             # Cached recursive call results  ││
 │  │ scratch/scripts/       # Agent-generated processing     ││
 │  │ output/answer.md       # Final answer                   ││
@@ -50,7 +50,7 @@ fsRLM implements the RLM paradigm with a **filesystem-as-working-memory** approa
 The filesystem approach gives you:
 - **Observability**: Watch the agent's reasoning unfold in real files
 - **Persistence**: Crash recovery, pause/resume capability
-- **Debugging**: Inspect `state/evidence.jsonl`, replay scripts
+- **Debugging**: Inspect `state/artifacts.jsonl`, replay scripts
 - **Caching**: Response cache survives across runs
 
 ## Installation
@@ -157,7 +157,7 @@ rlm = RLM(config=config)
 2. **Root Agent**: Claude (via Agent SDK) reads the input and decides how to process it
 3. **Scripts**: For large inputs, the agent writes Python scripts to `scratch/scripts/`
 4. **Recursive Calls**: Scripts use `tools/llm_client.py` to call Claude (Haiku) on chunks
-5. **Evidence**: Results accumulate in `state/evidence.jsonl`
+5. **Artifacts**: Results accumulate in `state/artifacts.jsonl`
 6. **Answer**: Final answer is written to `output/answer.md`
 
 ### Small Input (< 8KB)
