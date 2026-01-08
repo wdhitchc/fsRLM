@@ -148,7 +148,78 @@ The `.claude/skills/rlm-scripting/SKILL.md` teaches the agent **how to write scr
 
 The skill acts as a **tutorial** the agent can reference, ensuring consistent, efficient behavior.
 
-### 3. Filesystem-Based Intermediate State (vs REPL Variables)
+### 3. Codified State Contracts (Variables Across Scripts)
+
+In a REPL, variables persist across statements:
+```python
+# Statement 1
+summaries = [llm_query(chunk) for chunk in chunks]
+# Statement 2 can access summaries
+final = synthesize(summaries)
+```
+
+In fsRLM, **files** persist across scripts - but only if scripts know where to find them. The skill codifies a **state contract**:
+
+| What | Where | Format | Why |
+|------|-------|--------|-----|
+| Extracted facts | `state/evidence.jsonl` | Line-delimited JSON | Append-friendly, queryable |
+| Working notes | `state/notes.md` | Markdown | Human-readable reasoning |
+| Chunk indexes | `cache/indexes/*.json` | JSON | Structured, reusable |
+| API responses | `cache/llm/<hash>.json` | JSON | Deterministic cache keys |
+| Intermediate data | `scratch/tmp/*` | Any | Temporary, script-specific |
+| Final answer | `output/answer.md` | Markdown | The deliverable |
+
+**This enables script chaining:**
+
+```python
+# 001_extract.py - stores to evidence.jsonl
+from tools.llm_client import LLMClient
+client = LLMClient()
+for chunk in chunks:
+    client.call(
+        prompt=f"Extract facts: {chunk}",
+        log_to_evidence=True,  # Writes to state/evidence.jsonl
+        evidence_tag="extracted_fact",
+    )
+```
+
+```python
+# 002_synthesize.py - reads from evidence.jsonl
+import json
+
+# Later script KNOWS where to find the data
+evidence = []
+with open("state/evidence.jsonl") as f:
+    for line in f:
+        entry = json.loads(line)
+        if entry["tag"] == "extracted_fact":
+            evidence.append(entry["content"])
+
+# Now synthesize
+final_answer = synthesize(evidence)
+```
+
+**The skill ensures:**
+- Script 001 stores facts in `state/evidence.jsonl` with tag `"extracted_fact"`
+- Script 002 knows to look in `state/evidence.jsonl` for tagged entries
+- Both scripts follow the same conventions because the skill taught them
+
+**This is "variable persistence" via filesystem:**
+
+| REPL | fsRLM |
+|------|-------|
+| `summaries = [...]` | `client.call(..., log_to_evidence=True, evidence_tag="summary")` |
+| `print(summaries[0])` | `grep "summary" state/evidence.jsonl \| head -1` |
+| `len(summaries)` | `grep -c "summary" state/evidence.jsonl` |
+| `final = f(summaries)` | Read `evidence.jsonl`, filter by tag, process |
+
+The skill **codifies this knowledge** so the agent consistently:
+1. Stores important outputs to known locations
+2. Uses consistent formats (JSON, JSONL, Markdown)
+3. Tags entries for later retrieval
+4. Knows where to look when synthesizing
+
+### 4. Filesystem-Based Intermediate State (vs REPL Variables)
 
 This is a fundamental difference from the original RLM:
 
@@ -202,7 +273,7 @@ This creates an **audit trail** of all extracted information, tagged and timesta
 - Enables the synthesis step to read all evidence
 - Provides transparency into what the agent learned
 
-### 4. Standard Unix Tools for Exploration
+### 5. Standard Unix Tools for Exploration
 
 In the original RLM, the model interacts with `context` through Python string operations. In fsRLM, the agent has access to **standard Unix tools** via the Agent SDK's Bash/Read/Grep/Glob tools:
 
