@@ -48,8 +48,12 @@ INLINE_THRESHOLD_CHARS = 8000  # ~2k tokens
 class RunnerConfig:
     """Configuration for the Agent SDK runner."""
 
-    # Model settings
+    # Model settings (use Bedrock inference profile format if use_bedrock=True)
     model: str = "claude-sonnet-4-20250514"
+
+    # Bedrock settings
+    use_bedrock: bool = False
+    bedrock_model: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
     # Permission mode - acceptEdits auto-approves file operations
     permission_mode: str = "acceptEdits"
@@ -278,9 +282,12 @@ Begin by scanning the input to understand its structure."""
         """
         _ensure_sdk()  # Import SDK on first use
 
-        # Set up environment
-        env = os.environ.copy()
-        env["ANTHROPIC_API_KEY"] = os.environ.get("ANTHROPIC_API_KEY", "")
+        # Set up environment for Bedrock if enabled
+        if self.config.use_bedrock:
+            os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+            model = self.config.bedrock_model
+        else:
+            model = self.config.model
 
         # Build options
         options = ClaudeAgentOptions(

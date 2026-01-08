@@ -35,7 +35,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 
 try:
-    from anthropic import Anthropic, APIError
+    from anthropic import Anthropic, APIError, AnthropicBedrock
 except ImportError:
     raise ImportError("anthropic package required: pip install anthropic")
 
@@ -68,6 +68,7 @@ class LLMClient:
 
     Reads configuration from state/job.json and enforces budgets.
     All calls are logged and cached to the workspace filesystem.
+    Supports both direct Anthropic API and AWS Bedrock.
     """
 
     def __init__(self, workspace_root: Optional[Path] = None):
@@ -79,7 +80,16 @@ class LLMClient:
         """
         self.workspace = Path(workspace_root or os.getcwd())
         self.config = self._load_config()
-        self.client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+
+        # Check if using Bedrock
+        self.use_bedrock = self.config.get("use_bedrock", False)
+
+        if self.use_bedrock:
+            # Use AnthropicBedrock client - uses AWS credentials from environment
+            # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+            self.client = AnthropicBedrock()
+        else:
+            self.client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
         # Paths
         self.cache_dir = self.workspace / "cache" / "llm"
@@ -186,7 +196,12 @@ class LLMClient:
             CallResult on success, None on failure (error is logged)
         """
         # Apply defaults from config
-        model = model or self.config.get("submodel", "claude-haiku-4-20250414")
+        # Use Bedrock model format if enabled
+        if self.use_bedrock:
+            default_model = self.config.get("bedrock_submodel", "us.anthropic.claude-haiku-4-20250414-v1:0")
+        else:
+            default_model = self.config.get("submodel", "claude-haiku-4-20250414")
+        model = model or default_model
         max_tokens = max_tokens or self.config.get("max_tokens_per_call", 1000)
 
         # Check cache
@@ -324,7 +339,11 @@ class LLMClient:
 
         Uses the Anthropic token counting API.
         """
-        model = model or self.config.get("submodel", "claude-haiku-4-20250414")
+        if self.use_bedrock:
+            default_model = self.config.get("bedrock_submodel", "us.anthropic.claude-haiku-4-20250414-v1:0")
+        else:
+            default_model = self.config.get("submodel", "claude-haiku-4-20250414")
+        model = model or default_model
         try:
             result = self.client.messages.count_tokens(
                 model=model,

@@ -24,6 +24,9 @@ class WorkspaceConfig:
     max_subcalls_per_script: int = 25
     submodel: str = "claude-haiku-4-20250414"
     cache_responses: bool = True
+    # Bedrock settings
+    use_bedrock: bool = False
+    bedrock_submodel: str = "us.anthropic.claude-haiku-4-20250414-v1:0"
 
 
 @dataclass
@@ -124,6 +127,8 @@ class Workspace:
                 "max_subcalls_per_script": self.config.max_subcalls_per_script,
                 "submodel": self.config.submodel,
                 "cache_responses": self.config.cache_responses,
+                "use_bedrock": self.config.use_bedrock,
+                "bedrock_submodel": self.config.bedrock_submodel,
             },
             "rules": {
                 "prefer_scripts_over_reading_entire_prompt": True,

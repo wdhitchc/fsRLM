@@ -92,6 +92,11 @@ class RLMConfig:
     root_model: str = "claude-sonnet-4-20250514"
     max_turns: int = 50
 
+    # Bedrock settings
+    use_bedrock: bool = False
+    bedrock_model: str = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    bedrock_submodel: str = "us.anthropic.claude-haiku-4-20250414-v1:0"
+
     # Workspace settings
     workspace_dir: Optional[Path] = None  # None = temp directory
     preserve_workspace: bool = False  # Keep workspace after run
@@ -142,6 +147,8 @@ class RLM:
                 max_subcalls_per_script=self.config.max_subcalls_per_script,
                 submodel=self.config.submodel,
                 cache_responses=self.config.cache_responses,
+                use_bedrock=self.config.use_bedrock,
+                bedrock_submodel=self.config.bedrock_submodel,
             )
             self._workspace = Workspace.create(
                 root=self.config.workspace_dir,
@@ -214,6 +221,8 @@ class RLM:
         runner_config = RunnerConfig(
             model=self.config.root_model,
             max_turns=self.config.max_turns,
+            use_bedrock=self.config.use_bedrock,
+            bedrock_model=self.config.bedrock_model,
         )
         runner = AgentRunner(
             workspace_path=workspace.root,

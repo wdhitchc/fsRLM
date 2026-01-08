@@ -118,6 +118,37 @@ config = RLMConfig(
 rlm = RLM(config=config)
 ```
 
+## AWS Bedrock Support
+
+ccRLM supports AWS Bedrock as an alternative to the direct Anthropic API:
+
+```bash
+# Install with Bedrock support
+uv pip install -e ".[bedrock]"
+```
+
+```python
+from ccrlm import RLM, RLMConfig
+
+config = RLMConfig(
+    # Enable Bedrock
+    use_bedrock=True,
+
+    # Root agent model (Bedrock inference profile format)
+    bedrock_model="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+
+    # Subcall model for scripts
+    bedrock_submodel="us.anthropic.claude-haiku-4-20250414-v1:0",
+)
+
+rlm = RLM(config=config)
+```
+
+**Environment variables required:**
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION` (e.g., `us-east-1`)
+
 ## How It Works
 
 1. **Input**: Your prompt/messages are written to `input/prompt.md`
@@ -168,6 +199,7 @@ See [benchmarks/README.md](benchmarks/README.md) for details.
 - [x] Claude Agent SDK integration
 - [x] Messages API support (Anthropic format)
 - [x] Response caching and metrics
+- [x] AWS Bedrock support
 - [ ] OOLONG benchmark integration
 - [ ] LangChain/LangGraph agent backend (alternative to Agent SDK)
 - [ ] Streaming output support
