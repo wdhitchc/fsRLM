@@ -5,7 +5,7 @@ This module provides a cached, logged wrapper around the Anthropic API
 for use in RLM scripts. It handles:
 - Response caching (by content hash)
 - Error logging (to state/errors.jsonl)
-- Evidence logging (to state/evidence.jsonl)
+- Artifact logging (to state/artifacts.jsonl)
 - Metrics tracking (to state/metrics.json)
 - Budget enforcement (max tokens, max depth)
 
@@ -20,8 +20,8 @@ Usage in scripts:
         prompt="Summarize this chunk",
         system="You are a summarization assistant",
         max_tokens=500,
-        log_to_evidence=True,
-        evidence_tag="chunk_summary"
+        log_to_artifacts=True,
+        artifact_tag="chunk_summary"
     )
 
 NOTE: Scripts must ensure the workspace root is in sys.path before importing.
@@ -101,7 +101,7 @@ class LLMClient:
         # Paths
         self.cache_dir = self.workspace / "cache" / "llm"
         self.errors_path = self.workspace / "state" / "errors.jsonl"
-        self.evidence_path = self.workspace / "state" / "evidence.jsonl"
+        self.artifacts_path = self.workspace / "state" / "artifacts.jsonl"
         self.metrics_path = self.workspace / "state" / "metrics.json"
 
         # Ensure directories exist
@@ -150,15 +150,15 @@ class LLMClient:
         metrics["errors"] = metrics.get("errors", 0) + 1
         self._save_metrics(metrics)
 
-    def _log_evidence(self, content: str, tag: str, metadata: dict) -> None:
-        """Log evidence to evidence.jsonl."""
+    def _log_artifact(self, content: str, tag: str, metadata: dict) -> None:
+        """Log artifact to artifacts.jsonl."""
         entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "tag": tag,
             "content": content,
             "metadata": metadata,
         }
-        with open(self.evidence_path, "a") as f:
+        with open(self.artifacts_path, "a") as f:
             f.write(json.dumps(entry) + "\n")
 
     def _get_cached(self, cache_key: str) -> Optional[dict]:
@@ -182,8 +182,8 @@ class LLMClient:
         model: Optional[str] = None,
         max_tokens: Optional[int] = None,
         temperature: float = 0.0,
-        log_to_evidence: bool = False,
-        evidence_tag: str = "llm_response",
+        log_to_artifacts: bool = False,
+        artifact_tag: str = "llm_response",
         use_cache: bool = True,
     ) -> Optional[CallResult]:
         """
@@ -195,8 +195,8 @@ class LLMClient:
             model: Model to use (defaults to config submodel, usually Haiku)
             max_tokens: Max tokens (defaults to config max_tokens_per_call)
             temperature: Temperature (default 0 for determinism)
-            log_to_evidence: Whether to log response to evidence.jsonl
-            evidence_tag: Tag for evidence entry
+            log_to_artifacts: Whether to log response to artifacts.jsonl
+            artifact_tag: Tag for artifact entry
             use_cache: Whether to use response cache
 
         Returns:
@@ -240,8 +240,8 @@ class LLMClient:
                     call_id=cache_key,
                 )
 
-                if log_to_evidence:
-                    self._log_evidence(result.content, evidence_tag, {
+                if log_to_artifacts:
+                    self._log_artifact(result.content, artifact_tag, {
                         "cached": True,
                         "call_id": cache_key,
                     })
@@ -287,8 +287,8 @@ class LLMClient:
                 call_id=cache_key,
             )
 
-            if log_to_evidence:
-                self._log_evidence(content, evidence_tag, {
+            if log_to_artifacts:
+                self._log_artifact(content, artifact_tag, {
                     "cached": False,
                     "call_id": cache_key,
                     "input_tokens": input_tokens,
@@ -317,8 +317,8 @@ class LLMClient:
         system: str = "You are a helpful assistant.",
         model: Optional[str] = None,
         max_tokens: Optional[int] = None,
-        log_to_evidence: bool = False,
-        evidence_tag: str = "batch_response",
+        log_to_artifacts: bool = False,
+        artifact_tag: str = "batch_response",
     ) -> list[Optional[CallResult]]:
         """
         Call Claude on multiple prompts.
@@ -331,8 +331,8 @@ class LLMClient:
             system: System prompt (same for all)
             model: Model to use
             max_tokens: Max tokens per call
-            log_to_evidence: Whether to log responses
-            evidence_tag: Tag for evidence entries
+            log_to_artifacts: Whether to log responses
+            artifact_tag: Tag for artifact entries
 
         Returns:
             List of CallResults (None for failed calls)
@@ -344,8 +344,8 @@ class LLMClient:
                 system=system,
                 model=model,
                 max_tokens=max_tokens,
-                log_to_evidence=log_to_evidence,
-                evidence_tag=f"{evidence_tag}_{i}",
+                log_to_artifacts=log_to_artifacts,
+                artifact_tag=f"{artifact_tag}_{i}",
             )
             results.append(result)
         return results
@@ -377,8 +377,8 @@ def call_claude(
     prompt: str,
     system: str = "You are a helpful assistant.",
     max_tokens: int = 1000,
-    log_to_evidence: bool = False,
-    evidence_tag: str = "llm_response",
+    log_to_artifacts: bool = False,
+    artifact_tag: str = "llm_response",
 ) -> Optional[str]:
     """
     Simple function to call Claude from scripts.
@@ -394,7 +394,7 @@ def call_claude(
         prompt=prompt,
         system=system,
         max_tokens=max_tokens,
-        log_to_evidence=log_to_evidence,
-        evidence_tag=evidence_tag,
+        log_to_artifacts=log_to_artifacts,
+        artifact_tag=artifact_tag,
     )
     return result.content if result else None

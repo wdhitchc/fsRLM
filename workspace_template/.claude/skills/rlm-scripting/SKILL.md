@@ -89,8 +89,8 @@ result = client.call(
     prompt="Extract key facts from this text: " + chunk,
     system="You are a fact extraction assistant. Output JSON.",
     max_tokens=500,
-    log_to_evidence=True,      # Saves to state/evidence.jsonl
-    evidence_tag="facts",
+    log_to_artifacts=True,     # Saves to state/artifacts.jsonl
+    artifact_tag="facts",
     use_cache=True,            # Uses cache/llm/
 )
 
@@ -113,8 +113,8 @@ chunks = chunk_prompt(max_tokens=2000)
 for chunk in chunks:
     result = client.call(
         prompt=f"Summarize:\n\n{chunk.content}",
-        log_to_evidence=True,
-        evidence_tag=f"summary_chunk_{chunk.index}",
+        log_to_artifacts=True,
+        artifact_tag=f"summary_chunk_{chunk.index}",
     )
     # Result is cached - re-running won't re-call API
 ```
@@ -124,7 +124,7 @@ for chunk in chunks:
 | What | Where | Format |
 |------|-------|--------|
 | Working notes | `state/notes.md` | Markdown |
-| Extracted facts | `state/evidence.jsonl` | Line-delimited JSON |
+| Extracted facts | `state/artifacts.jsonl` | Line-delimited JSON |
 | Chunk manifests | `cache/indexes/` | JSON |
 | API responses | `cache/llm/` | JSON (auto by llm_client) |
 | Intermediate data | `scratch/tmp/` | Any |
@@ -207,10 +207,10 @@ print(json.dumps(big_data, indent=2))  # BAD
 
 4. **Extract**: Process chunks with Claude calls
    ```
-   003_extract.py -> state/evidence.jsonl
+   003_extract.py -> state/artifacts.jsonl
    ```
 
-5. **Synthesize**: Combine evidence into answer
+5. **Synthesize**: Combine artifacts into answer
    ```
    004_synthesize.py -> output/answer.md
    ```

@@ -181,7 +181,7 @@ def large_prompt_example():
     result = rlm.invoke(prompt)
 
     print(f"Success: {result.success}")
-    print(f"Evidence items collected: {len(result.evidence)}")
+    print(f"Artifacts collected: {len(result.artifacts)}")
     print(f"Errors: {len(result.errors)}")
 
     if result.answer:

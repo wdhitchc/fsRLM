@@ -67,8 +67,8 @@ class RLMResult:
     errors: list[dict]
     """Any errors logged during the run."""
 
-    evidence: list[dict]
-    """Evidence collected during processing."""
+    artifacts: list[dict]
+    """Artifacts collected during processing (intermediate results, extracted data)."""
 
     success: bool
     """Whether the run produced an answer."""
@@ -178,7 +178,7 @@ class RLM:
             attachments: Optional dict of filename -> bytes for attachments
 
         Returns:
-            RLMResult with answer, metrics, errors, evidence
+            RLMResult with answer, metrics, errors, artifacts
 
         Examples:
             # Simple prompt
@@ -238,7 +238,7 @@ class RLM:
             answer=result.get("answer"),
             metrics=result.get("metrics", {}),
             errors=result.get("errors", []),
-            evidence=workspace.get_evidence(),
+            artifacts=workspace.get_artifacts(),
             success=result.get("answer") is not None,
             workspace_path=workspace.root if self.config.preserve_workspace else None,
         )
