@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ccrlm"
+version = "0.1.0"
+description = "Claude Code Recursive Language Model - RLM-style agent with filesystem-backed working memory"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "William Hitchcock" }
+]
+keywords = ["claude", "llm", "agent", "rlm", "recursive"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "anthropic>=0.40.0",
+    "claude-agent-sdk>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+]
+benchmarks = [
+    "datasets>=2.14.0",
+    "pandas>=2.0.0",
+    "tqdm>=4.65.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/williamhitchcock/ccrlm"
+Documentation = "https://github.com/williamhitchcock/ccrlm#readme"
+Repository = "https://github.com/williamhitchcock/ccrlm"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ccrlm", "tools"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "ccrlm/",
+    "tools/",
+    "workspace_template/",
+    "examples/",
+    "README.md",
+    "pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
