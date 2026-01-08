@@ -97,6 +97,174 @@ fsRLM implements the same concept, but uses the **filesystem as working memory**
 | (none) | `.claude/CLAUDE.md` | Agent instructions |
 | (none) | `.claude/skills/` | Specialized behaviors |
 
+## Key Design Decisions
+
+### 1. Pre-built Tools (Don't Reinvent the Wheel)
+
+In the original RLM, the model must write all processing code from scratch each time. fsRLM provides **pre-built tools** in the `tools/` directory:
+
+**`tools/llm_client.py`** - Claude API wrapper with:
+- Response caching (don't re-call for same prompt)
+- Automatic error logging to `state/errors.jsonl`
+- Evidence logging to `state/evidence.jsonl`
+- Metrics tracking (token counts, call counts)
+- Budget enforcement from `job.json` config
+
+**`tools/chunking.py`** - Text processing utilities:
+- Token-aware chunking with overlap
+- Line/paragraph/heading-based splitting
+- Index building for large documents
+- Random access to file sections without loading entire file
+
+**Why?** The agent doesn't waste turns reimplementing caching, error handling, or chunking logic. It can focus on the actual task.
+
+```python
+# Agent just imports and uses - no boilerplate needed
+from tools.llm_client import LLMClient
+from tools.chunking import chunk_prompt
+
+client = LLMClient()
+for chunk in chunk_prompt(max_tokens=2000):
+    result = client.call(f"Summarize: {chunk.content}")
+    # Caching, logging, metrics all handled automatically
+```
+
+### 2. Skills (Teaching the Agent How to Script)
+
+The `.claude/skills/rlm-scripting/SKILL.md` teaches the agent **how to write scripts for this specific environment**:
+
+- **Naming conventions**: `001_scan.py`, `002_extract.py`, etc.
+- **Output discipline**: Write to files, print only summaries
+- **Where to store what**: evidence → `state/evidence.jsonl`, cache → `cache/`, etc.
+- **How to use the tools**: Example code for `LLMClient`, `Chunker`
+- **Typical workflow**: scan → chunk → extract → synthesize → verify
+- **Budget awareness**: How to check limits in `job.json`
+
+**Why?** Without this guidance, the agent might:
+- Print huge outputs to stdout (clogs context)
+- Not use caching (wastes API calls)
+- Store files in wrong locations
+- Miss budget constraints
+
+The skill acts as a **tutorial** the agent can reference, ensuring consistent, efficient behavior.
+
+### 3. Filesystem-Based Intermediate State (vs REPL Variables)
+
+This is a fundamental difference from the original RLM:
+
+**Original RLM (REPL variables):**
+```python
+# Intermediate results live in Python memory
+chunks = context.split('\n\n')
+summaries = []
+for chunk in chunks:
+    summaries.append(llm_query(f"Summarize: {chunk}"))
+# If the process crashes here, summaries is lost
+final = synthesize(summaries)
+```
+
+**fsRLM (filesystem):**
+```python
+# Intermediate results written to files
+for i, chunk in enumerate(chunks):
+    result = client.call(f"Summarize: {chunk}")
+    # Result automatically logged to state/evidence.jsonl
+    # AND cached to cache/llm/<hash>.json
+
+# If process crashes, evidence.jsonl persists
+# Re-running uses cache - no repeated API calls
+```
+
+**Key benefits of filesystem-based state:**
+
+| Aspect | REPL Variables | Filesystem |
+|--------|---------------|------------|
+| Crash recovery | Lost | Preserved in files |
+| Debugging | Print statements | Inspect actual files |
+| Caching | Must implement | Built into llm_client |
+| Observability | Limited | Watch files in real-time |
+| Auditability | Trajectory logs | Full evidence trail |
+| Pause/resume | Complex | Natural (stop/start) |
+
+**Evidence as structured data:**
+
+Instead of summaries sitting in a Python list, they're appended to `state/evidence.jsonl`:
+
+```json
+{"timestamp": "2024-01-15T10:30:00", "tag": "summary_chunk_0", "content": "...", "metadata": {...}}
+{"timestamp": "2024-01-15T10:30:05", "tag": "summary_chunk_1", "content": "...", "metadata": {...}}
+{"timestamp": "2024-01-15T10:30:10", "tag": "summary_chunk_2", "content": "...", "metadata": {...}}
+```
+
+This creates an **audit trail** of all extracted information, tagged and timestamped, that:
+- Survives crashes
+- Can be inspected mid-run
+- Enables the synthesis step to read all evidence
+- Provides transparency into what the agent learned
+
+### 4. Standard Unix Tools for Exploration
+
+In the original RLM, the model interacts with `context` through Python string operations. In fsRLM, the agent has access to **standard Unix tools** via the Agent SDK's Bash/Read/Grep/Glob tools:
+
+**Original RLM (Python only):**
+```python
+# Must load into memory or write custom parsing
+first_1000_chars = context[:1000]
+lines_with_error = [l for l in context.split('\n') if 'error' in l.lower()]
+```
+
+**fsRLM (Unix tools + Python):**
+```bash
+# Peek at first 50 lines without loading file
+head -50 input/prompt.md
+
+# Find all lines mentioning "error"
+grep -i "error" input/prompt.md
+
+# Count sections
+grep -c "^## " input/prompt.md
+
+# Get lines 100-150
+sed -n '100,150p' input/prompt.md
+
+# Check file size before deciding strategy
+wc -l input/prompt.md
+```
+
+**Why this matters:**
+
+The agent can **explore** the input before committing to a processing strategy:
+
+1. **Quick inspection**: `head`, `tail`, `wc` to understand size/structure
+2. **Search without loading**: `grep` to find relevant sections
+3. **Selective reading**: `sed` to extract specific line ranges
+4. **Pattern matching**: `grep -E` for regex searches
+
+This enables **intelligent chunking** - the agent can:
+- Count sections (`grep -c "^## "`)
+- Find boundaries (`grep -n "^## "` for line numbers)
+- Sample content (`head -100`, `tail -100`)
+- Search for keywords before deciding what to process
+
+```bash
+# Agent's exploration before writing processing script:
+$ wc -l input/prompt.md
+15847 input/prompt.md
+
+$ grep -c "^## " input/prompt.md
+47
+
+$ head -20 input/prompt.md
+# Security Audit Report
+## Executive Summary
+...
+
+# Now agent knows: 15K lines, 47 sections, it's a security report
+# Can write targeted extraction script
+```
+
+This is a natural fit because **filesystems already have rich tooling** for exploration. The Agent SDK exposes Read, Grep, Glob, and Bash - giving the agent the same tools a human developer would use.
+
 ## Complete Flow
 
 ### Step 1: User Invokes fsRLM
