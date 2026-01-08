@@ -23,6 +23,13 @@ Usage in scripts:
         log_to_evidence=True,
         evidence_tag="chunk_summary"
     )
+
+NOTE: Scripts must ensure the workspace root is in sys.path before importing.
+      Add this at the top of your script:
+
+      import sys
+      from pathlib import Path
+      sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 """
 
 import os
@@ -203,6 +210,16 @@ class LLMClient:
             default_model = self.config.get("submodel", "claude-haiku-4-20250414")
         model = model or default_model
         max_tokens = max_tokens or self.config.get("max_tokens_per_call", 1000)
+
+        # Check budget limits before making call
+        metrics = self._get_metrics()
+        max_subcalls = self.config.get("max_subcalls_per_script", 25)
+        if metrics.get("subcalls_made", 0) >= max_subcalls:
+            self._log_error(
+                Exception(f"Budget exceeded: max_subcalls_per_script={max_subcalls}"),
+                {"subcalls_made": metrics.get("subcalls_made", 0)}
+            )
+            return None
 
         # Check cache
         cache_key = _hash_request(model, system, prompt, max_tokens)

@@ -39,10 +39,14 @@ Purpose: Scan input/prompt.md and build an index
 Output: cache/indexes/prompt_index.json
 """
 
-import json
+# IMPORTANT: Add workspace root to Python path FIRST
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# Use provided tools
+import json
+
+# Now you can import from tools/
 from tools.chunking import Chunker
 
 def main():
