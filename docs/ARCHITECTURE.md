@@ -19,34 +19,35 @@ The [Recursive Language Model (RLM) paper](https://arxiv.org/abs/2512.24601) by 
 ┌─────────────────────────────────────────────────────────────┐
 │  Python REPL Environment                                    │
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │ extra_data = "<the full prompt>"  # In-memory variable  ││
-│  │ answer = None                      # Model sets this    ││
+│  │ context = "<the full prompt>"  # In-memory variable     ││
 │  │                                                          ││
-│  │ def llm_batch(prompts):            # Recursive calls    ││
-│  │     return [call_llm(p) for p in prompts]               ││
+│  │ def llm_query(prompt):         # Recursive calls        ││
+│  │     return call_llm(prompt)    # ~500K char capacity    ││
+│  │                                                          ││
+│  │ print()                        # View REPL output       ││
 │  └─────────────────────────────────────────────────────────┘│
 │                              │                               │
 │              LLM writes and executes Python code             │
 │                              │                               │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │ # Model-generated code:                                  ││
-│  │ chunks = extra_data.split('\n\n')                        ││
-│  │ summaries = llm_batch([f"Summarize: {c}" for c in chunks])│
-│  │ answer = synthesize(summaries)                           ││
+│  │ chunks = context.split('\n\n')                           ││
+│  │ summaries = [llm_query(f"Summarize: {c}") for c in chunks]│
+│  │ final_answer = synthesize(summaries)                     ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Final Answer (from `answer` variable)                      │
+│  Final Answer (returned from REPL execution)                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Key Components:**
-- `extra_data`: In-memory variable holding the full prompt
-- `llm_batch()`: Function for recursive LLM calls
-- `answer`: Variable where the model stores its final answer
-- Python REPL: Executes model-generated code
+**Key Components (from the paper):**
+- `context`: In-memory variable containing "extremely important information about your query"
+- `llm_query()`: Function for recursive LLM calls (handles ~500K chars)
+- `print()`: View REPL code output for continued reasoning
+- Python REPL: Executes model-generated code that peeks into, decomposes, and processes the context
 
 ## fsRLM: Filesystem-Based Implementation
 
@@ -61,18 +62,18 @@ fsRLM implements the same concept, but uses the **filesystem as working memory**
 ┌─────────────────────────────────────────────────────────────┐
 │  Workspace Filesystem (working memory)                      │
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │ input/prompt.md        ←── extra_data equivalent        ││
+│  │ input/prompt.md        ←── context variable equivalent   ││
 │  │ state/evidence.jsonl   ←── intermediate results         ││
 │  │ cache/llm/             ←── cached recursive calls       ││
 │  │ scratch/scripts/       ←── model-generated code         ││
-│  │ output/answer.md       ←── answer variable equivalent   ││
+│  │ output/answer.md       ←── final answer destination     ││
 │  └─────────────────────────────────────────────────────────┘│
 │                              │                               │
 │              Claude Agent SDK runs the agent                 │
 │                     (reads CLAUDE.md + skills)               │
 │                              │                               │
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │ tools/llm_client.py    ←── llm_batch() equivalent       ││
+│  │ tools/llm_client.py    ←── llm_query() equivalent       ││
 │  │ tools/chunking.py      ←── text processing utilities    ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
@@ -87,9 +88,9 @@ fsRLM implements the same concept, but uses the **filesystem as working memory**
 
 | Original RLM | fsRLM | Purpose |
 |--------------|-------|---------|
-| `extra_data` variable | `input/prompt.md` file | Stores the (potentially huge) input |
-| `answer` variable | `output/answer.md` file | Final answer destination |
-| `llm_batch()` function | `tools/llm_client.py` | Makes recursive LLM calls |
+| `context` variable | `input/prompt.md` file | Stores the (potentially huge) input |
+| Return value | `output/answer.md` file | Final answer destination |
+| `llm_query()` function | `tools/llm_client.py` | Makes recursive LLM calls |
 | Python REPL | Claude Agent SDK | Executes model-generated code |
 | In-memory state | `state/` directory | Working memory |
 | (none) | `cache/llm/` | Response caching (fsRLM addition) |
@@ -511,4 +512,4 @@ fsRLM faithfully implements the RLM paper's core insight—treating prompts as a
 3. **Added benefits**: Persistence, caching, observability, debugging
 4. **Same result**: Arbitrarily long inputs processed through recursive calls
 
-The filesystem IS the working memory. The Agent SDK IS the REPL. The scripts ARE the model-generated code. The answer file IS the answer variable.
+The filesystem IS the working memory. The Agent SDK IS the REPL. The scripts ARE the model-generated code. `input/prompt.md` IS the `context` variable. `output/answer.md` IS the final answer.
