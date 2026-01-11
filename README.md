@@ -51,7 +51,7 @@ The filesystem approach gives you:
 - **Observability**: Watch the agent's reasoning unfold in real files
 - **Persistence**: Crash recovery, pause/resume capability
 - **Debugging**: Inspect `state/artifacts.jsonl`, replay scripts
-- **Caching**: Response cache survives across runs
+- **Caching**: Response cache prevents redundant API calls within a run
 
 ## Installation
 

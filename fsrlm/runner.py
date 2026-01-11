@@ -72,10 +72,6 @@ class RunnerConfig:
     # Load project settings (CLAUDE.md, skills)
     setting_sources: list[str] = field(default_factory=lambda: ["project"])
 
-    # Sandbox settings for bash execution
-    sandbox_enabled: bool = True
-    auto_allow_bash_if_sandboxed: bool = True
-
     # Timeouts
     max_turns: int = 50
     timeout_seconds: int = 600  # 10 minutes

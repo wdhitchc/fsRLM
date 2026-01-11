@@ -58,13 +58,14 @@ class CallResult:
     call_id: str
 
 
-def _hash_request(model: str, system: str, prompt: str, max_tokens: int) -> str:
+def _hash_request(model: str, system: str, prompt: str, max_tokens: int, temperature: float) -> str:
     """Generate a deterministic hash for caching."""
     key = json.dumps({
         "model": model,
         "system": system,
         "prompt": prompt,
         "max_tokens": max_tokens,
+        "temperature": temperature,
     }, sort_keys=True)
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
@@ -222,7 +223,7 @@ class LLMClient:
             return None
 
         # Check cache
-        cache_key = _hash_request(model, system, prompt, max_tokens)
+        cache_key = _hash_request(model, system, prompt, max_tokens, temperature)
 
         if use_cache and self.config.get("cache_responses", True):
             cached = self._get_cached(cache_key)
@@ -398,3 +399,53 @@ def call_claude(
         artifact_tag=artifact_tag,
     )
     return result.content if result else None
+
+
+def check_budget(workspace_root: Optional[Path] = None) -> dict:
+    """
+    Check current budget status.
+
+    Returns dict with:
+        - scripts_created: int
+        - scripts_remaining: int
+        - subcalls_made: int
+        - subcalls_remaining: int
+        - within_budget: bool
+
+    Example:
+        from tools.llm_client import check_budget
+        budget = check_budget()
+        if not budget["within_budget"]:
+            print("Budget exceeded!")
+    """
+    workspace = Path(workspace_root or os.getcwd())
+
+    # Load config
+    job_path = workspace / "state" / "job.json"
+    config = {}
+    if job_path.exists():
+        with open(job_path) as f:
+            config = json.load(f).get("config", {})
+
+    # Load metrics
+    metrics_path = workspace / "state" / "metrics.json"
+    metrics = {}
+    if metrics_path.exists():
+        with open(metrics_path) as f:
+            metrics = json.load(f)
+
+    # Count scripts
+    scripts_dir = workspace / "scratch" / "scripts"
+    scripts_created = len(list(scripts_dir.glob("*.py"))) if scripts_dir.exists() else 0
+
+    max_scripts = config.get("max_scripts", 20)
+    max_subcalls = config.get("max_subcalls_per_script", 25)
+    subcalls_made = metrics.get("subcalls_made", 0)
+
+    return {
+        "scripts_created": scripts_created,
+        "scripts_remaining": max(0, max_scripts - scripts_created),
+        "subcalls_made": subcalls_made,
+        "subcalls_remaining": max(0, max_subcalls - subcalls_made),
+        "within_budget": scripts_created < max_scripts and subcalls_made < max_subcalls,
+    }

@@ -222,14 +222,31 @@ print(json.dumps(big_data, indent=2))  # BAD
 
 ## Budget Awareness
 
-Check limits in `state/job.json`:
+Use the `check_budget()` helper to monitor limits:
+
+```python
+from tools.llm_client import check_budget
+
+budget = check_budget()
+print(f"Scripts: {budget['scripts_created']}/{budget['scripts_created'] + budget['scripts_remaining']}")
+print(f"Subcalls: {budget['subcalls_made']}/{budget['subcalls_made'] + budget['subcalls_remaining']}")
+
+if not budget["within_budget"]:
+    print("WARNING: Budget exceeded!")
+    sys.exit(1)
+```
+
+The `LLMClient.call()` will return `None` and log an error if subcall budget is exceeded.
+
+You can also check limits manually in `state/job.json`:
 ```python
 import json
 with open("state/job.json") as f:
     config = json.load(f)["config"]
 
-max_calls = config["max_subcalls_per_script"]  # e.g., 25
-max_tokens = config["max_tokens_per_call"]     # e.g., 1000
+max_scripts = config["max_scripts"]              # e.g., 20
+max_calls = config["max_subcalls_per_script"]    # e.g., 25
+max_tokens = config["max_tokens_per_call"]       # e.g., 1000
 ```
 
 Monitor usage in `state/metrics.json`:
